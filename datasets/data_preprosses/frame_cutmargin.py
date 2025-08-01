@@ -9,7 +9,7 @@ import os
 import numpy as np
 import multiprocessing
 from tqdm import tqdm
-
+import sys
 
 def create_directory_if_not_exists(path):
     if not os.path.exists(path):
@@ -64,15 +64,16 @@ def process_video(video_id, video_source, video_save):
     for image_id in sorted(os.listdir(video_source)):
         if image_id == ".DS_Store":
             continue
-        image_source = os.path.join(video_source, image_id)
-        image_save = os.path.join(video_save, image_id)
+        image_idx = int(os.path.splitext(image_id)[0])
+        image_source = os.path.join(video_source, '{:08d}.jpg'.format(image_idx))
+        image_save = os.path.join(video_save, '{:05d}.png'.format(image_idx))
 
         process_image(image_source, image_save)
 
 
 if __name__ == "__main__":
-    source_path = "/home/yangshu/Surgformer/data/Cholec80/frames"  # original path
-    save_path = "/home/yangshu/Surgformer/data/Cholec80/frames_cutmargin"  # save path
+    source_path = "/media/gpuadmin/rcao/dataset/cholec80/frames_1fps"  # original path
+    save_path = "/media/gpuadmin/rcao/dataset/cholec80/frames_cutmargin"  # save path
 
     create_directory_if_not_exists(save_path)
 
@@ -81,8 +82,9 @@ if __name__ == "__main__":
     for video_id in tqdm(os.listdir(source_path)):
         if video_id == ".DS_Store":
             continue
-        video_source = os.path.join(source_path, video_id)
-        video_save = os.path.join(save_path, video_id)
+        video_id = int(video_id)
+        video_source = os.path.join(source_path, '{:02d}'.format(video_id))
+        video_save = os.path.join(save_path, 'video{:02d}'.format(video_id))
 
         process = multiprocessing.Process(
             target=process_video, args=(video_id, video_source, video_save)

@@ -227,6 +227,9 @@ def final_phase_test(data_loader, model, device, file):
     # switch to evaluation mode
     model.eval()
     final_result = []
+    # inference_time = 0
+    # start_event = torch.cuda.Event(enable_timing=True)
+    # end_event = torch.cuda.Event(enable_timing=True)
 
     for batch in metric_logger.log_every(data_loader, 10, header):
         videos = batch[0]
@@ -238,7 +241,14 @@ def final_phase_test(data_loader, model, device, file):
 
         # compute output
         with torch.cuda.amp.autocast():
-            output = model(videos)  
+            # start_event.record()
+            # torch.cuda.synchronize()
+            output = model(videos)
+
+            # end_event.record()
+            # torch.cuda.synchronize()
+            # inference_time += start_event.elapsed_time(end_event)
+            
             # Output: N,7
             # Target: N,
             loss = criterion(output, target)
@@ -269,6 +279,7 @@ def final_phase_test(data_loader, model, device, file):
         metric_logger.meters["acc1"].update(acc1.item(), n=batch_size)
         metric_logger.meters["acc5"].update(acc5.item(), n=batch_size)
 
+    # print("Total inference Time: ", inference_time)
     if not os.path.exists(file):
         # os.mknod(file)  # 用于创建一个指定文件名的文件系统节点，暂时无权限
         open(file, 'a').close()

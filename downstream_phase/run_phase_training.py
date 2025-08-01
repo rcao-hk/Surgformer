@@ -11,7 +11,7 @@ from collections import OrderedDict
 import torch.nn.functional as F
 import sys
 
-sys.path.append("/home/yangshu/Surgformer")
+sys.path.append("/home/smartgrasping/rcao/Surgformer")
 
 from datasets.transforms.mixup import Mixup
 from timm.models import create_model
@@ -830,6 +830,8 @@ def main(args, ds_init):
         exit(0)
 
     print(f"Start training for {args.epochs} epochs")
+    start_event = torch.cuda.Event(enable_timing=True)
+    end_event = torch.cuda.Event(enable_timing=True)
     start_time = time.time()
     max_accuracy = 0.0
     max_epoch = 0
@@ -838,6 +840,9 @@ def main(args, ds_init):
             data_loader_train.sampler.set_epoch(epoch)
         if log_writer is not None:
             log_writer.set_step(epoch * num_training_steps_per_epoch * args.update_freq)
+            
+        start_event.record()
+        torch.cuda.synchronize()
         train_stats = train_one_epoch(
             model,
             criterion,
@@ -856,6 +861,11 @@ def main(args, ds_init):
             num_training_steps_per_epoch=num_training_steps_per_epoch,
             update_freq=args.update_freq,
         )
+        end_event.record()
+        torch.cuda.synchronize()
+        train_elapsed_time = start_event.elapsed_time(end_event)
+        print(f'Epoch {epoch} took {train_elapsed_time/1000:.2f} seconds')
+        
         if args.output_dir and args.save_ckpt:
             if (epoch + 1) % args.save_ckpt_freq == 0 or epoch + 1 == args.epochs:
                 utils.save_model(
